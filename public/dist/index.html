@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <title>疫情地图</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+    <style>
+    body,
+    html,
+    #container {
+        overflow: hidden;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        font-family: "微软雅黑";
+    }
+		#setLabelFun{
+           position: fixed;
+           top: 10px;
+           left: 10px;
+           height: 28px;
+           background: #fff;
+           box-shadow: 0 2px 6px 0 rgba(27, 142, 236, 0.5);
+           border-radius: 7px;
+           z-index: 99;
+       }
+       #removeLabelFun{
+           position: fixed;
+           top: 45px;
+           height: 28px;
+           left: 10px;
+           background: #fff;
+           box-shadow: 0 2px 6px 0 rgba(27, 142, 236, 0.5);
+           border-radius: 7px;
+           z-index: 99;
+       }
+       #location{
+           position: fixed;
+           top: 10px;
+           right: 10px;
+           height: 28px;
+           background: #fff;
+           box-shadow: 0 2px 6px 0 rgba(27, 142, 236, 0.5);
+           border-radius: 7px;
+           z-index: 99;
+       }
+       #result_l{
+        padding: 10px;
+        position: fixed;
+        top: 150px;
+        left: 10px;
+        width: 100px;
+        height: 30%;
+        overflow-y: scroll;
+        overflow-x: hidden;
+        background: #fff;
+        box-shadow: 0 2px 6px 0 rgb(27 142 236 / 50%);
+        border-radius: 7px;
+        z-index: 99;
+        justify-content: center;
+        display: flex;
+        flex-wrap: wrap;
+        opacity: 0.8;
+       }
+       #allDate{
+        height: 28px;
+           position: fixed;
+           top: 80px;
+           left: 10px;
+           background: #fff;
+           box-shadow: 0 2px 6px 0 rgba(27, 142, 236, 0.5);
+           border-radius: 7px;
+           z-index: 99;
+       }
+       #inputText{
+            position: fixed;
+            width: 160px;
+            height: 20px;
+           top: 10px;
+           right: 80px;
+           background: #fff;
+           box-shadow: 0 2px 6px 0 rgba(27, 142, 236, 0.5);
+           border-radius: 7px;
+           z-index: 99;
+       }
+       #change{
+        font-size: 14px;
+        padding: 5px 10px;
+        position: fixed;
+        top: 120px;
+        left: 10px;
+        background: #fff;
+        box-shadow: 0 2px 6px 0 rgb(27 142 236 / 50%);
+        border-radius: 7px;
+        z-index: 100;
+        justify-content: center;
+        display: flex;
+        flex-wrap: wrap;
+       }
+       .activeStyle{
+           background-color: rgb(108, 108, 201);
+           color: #fff;
+       }
+    </style>
+    <script src="//api.map.baidu.com/api?type=webgl&v=1.0&ak=iBRLT0Zo8Cp865SLUhOWCVP9a1REGbQT"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/shiyueGG/pxmu@main/pxmu.min.js"></script>
+</head>
+<body>
+    <div id="container"></div>
+    <div id="change" onclick="changeText()">收起</div>
+    <div id="result_l">
+    </div>
+    <button id='setLabelFun' onclick="setLabelFun()">展示详细地址</button>
+    <button id='removeLabelFun' onclick="removeLabelFun()">收起详细地址</button>
+    <button id='allDate' onclick="allDate()">截止到今日的所有地址数据</button>
+    <button id='location' onclick="locationFun()">查询<svg t="1648007270742" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6494" width="10" height="10"><path d="M936.974504 424.974504C936.974504 190.005666 746.968839 0 512 0S87.025496 190.005666 87.025496 424.974504c0 108.78187 42.062323 207.410765 108.781869 282.832861l2.90085 2.90085c8.70255 10.152975 17.405099 18.855524 27.558074 27.558074l285.733711 285.733711L797.733711 738.266289c10.152975-8.70255 18.855524-17.405099 27.558074-27.558074l2.90085-2.90085c66.719547-75.422096 108.78187-174.050992 108.781869-282.832861z m-424.974504 101.529745c-56.566572 0-102.98017-46.413598-102.98017-102.98017s46.413598-102.98017 102.98017-102.98017 102.98017 46.413598 102.98017 102.98017-46.413598 102.98017-102.98017 102.98017z" fill="#F39800" p-id="6495"></path></svg></button>
+    <input id='inputText' placeholder="请输入地址" type="text">
+</body>
+</html>
+<!-- <script src="https://cdn.bootcss.com/vConsole/3.2.0/vconsole.min.js"></script>
+<script>
+  // 初始化
+  var vConsole = new VConsole();
+  console.log('Hello world');
+</script> -->
+<script>
+var map = new BMapGL.Map('container');
+map.centerAndZoom(new BMapGL.Point(121.48	, 31.22), 13);
+map.enableScrollWheelZoom(true);
+var scaleCtrl = new BMapGL.ScaleControl();  // 添加比例尺控件
+map.addControl(scaleCtrl);
+var zoomCtrl = new BMapGL.ZoomControl();  // 添加缩放控件
+map.addControl(zoomCtrl);
+// 创建点标记
+let obj =[];
+let adds = [],arr =[]
+let index = 0
+let addressOver = []
+var myGeo = new BMapGL.Geocoder();
+let _marker = [];allStr ='';allArr=[];serchMarker = null
+
+
+function countDown(){
+    pxmu.loading({
+        msg: '正在加载', //loading信息 为空时不显示文本
+        time: 5000, //停留时间 
+        bg: 'rgba(0, 0, 0, 0.65)', //背景色
+        color: '#fff', //文字颜色
+        animation: 'fade', //动画名 详见动画文档
+        close: true, // 自动关闭 为false时可在业务完成后调用 pxmu.closeload();手动关闭
+        inscroll: false, //模态 不可点击和滚动
+        inscrollbg : 'rgba(0, 0, 0, 0.45)',//自定义遮罩层颜色 为空不显示遮罩层
+    });
+ }
+// 定位
+
+var geolocation = new BMapGL.Geolocation();
+function locationFun() {
+    const input = document.querySelector('#inputText').value
+    if(serchMarker){
+        serchMarker.enableMassClear()
+    }
+    map.clearOverlays()
+    myGeo.getPoint(input, function(point){
+        if(point){
+            
+            // map.centerAndZoom(point, 16);
+            const per =  new BMapGL.Icon('http://121.40.110.100:13600/ddd.png', new BMapGL.Size(32, 32))
+            // const per =  new BMapGL.Icon('http://10.10.136.188:3000/ddd.png', new BMapGL.Size(32, 32))
+            const markers = new BMapGL.Marker(point,{icon:per})
+            serchMarker = markers
+            map.addOverlay(markers)
+            markers.disableMassClear();
+            setTimeout(() => {
+                map.panTo(new BMapGL.Point(point.lng,point.lat))
+            }, 500);
+            map.setZoom(19);
+        }else{
+            alert('您填写的地址没有解析到结果！');
+        }
+    },"上海市")
+}
+let flag = true
+function changeText() {
+    flag = !flag
+    if(flag){
+        document.querySelector('#change').innerHTML=('收起')
+        document.querySelector("#result_l").style.display='flex'
+    }else{
+        document.querySelector('#change').innerHTML=('展开')
+        document.querySelector("#result_l").style.display='none'
+    }
+}
+// url (必须), options (可选)
+fetch('http://121.40.110.100:13800/getData', {
+    method: 'get'
+}).then((e)=>e.json()).then((res)=>{
+    let str = '';danri = '';ht = '';date = [];data = []
+    // new Date(date)
+    setTimeout(() => {
+            new Date(date).toJSON()
+    }, 3000);
+    data = JSON.parse(JSON.stringify(res))
+    console.log(data)
+    for(var i=0;i<data.length;i++){
+        for(var j=i+1;j<data.length;j++){
+            //如果第一个比第二个大，就交换他们两个位置
+            if(new Date(rTime(data[i].date))<new Date(rTime(data[j].date))){
+                var temp = data[i];
+                data[i] = data[j];
+                data[j] = temp;
+            }
+        }
+    }
+    
+    document.querySelector('#allDate').innerHTML = '查看'+rTime(data[0].date).substring(0,10)+'至'+rTime(data[data.length-1].date).substring(0,10)+'所有数据'
+	// danri = '<div style="font-size:14px;">单日查询</div>'
+    
+    for(let key in data){
+        if(data[key].location){
+            str = str + data[key].location
+            allStr = allStr + data[key].location
+            date.push(key)
+            ht = ht+"<button id="+('point'+key)+" style='margin: 5px 0;' value="+ data[key].location +">"+ data[key].date.substring(0,10)+"</button>"
+        }
+        
+    }
+    let arr = []
+    arr = allStr.split('，')
+    arr = [...new Set(arr)]
+    allArr = []
+    for (let index in arr){
+        if(arr[index].includes('居住于')){
+            allArr.push(arr[index].substring(3))
+        }
+    }
+    document.querySelector("#result_l").innerHTML = (ht)
+}).catch(function(err) {
+	console.log(err)
+});
+function rTime (utc) {
+    var date = new Date(utc),
+        year = date.getFullYear(),
+        month = date.getMonth()+1 > 9 ? date.getMonth()+1 : '0' + parseInt(date.getMonth()+1),
+        day = date.getDate() > 9 ? date.getDate() : '0' + date.getDate(),
+        hour =  date.getHours() > 9 ? date.getHours() : '0' + date.getHours(),
+        minutes = date.getMinutes() > 9 ? date.getMinutes() : '0' + date.getMinutes(),
+        seconds = date.getSeconds() > 9 ? date.getSeconds() : '0' + date.getSeconds();
+    var res = year + '-' + month + '-' + day + ' ' + hour + ':' + minutes + ':' +seconds;
+    return res;
+  }
+// function rTime(date) {
+//     var json_date = new Date(date).toJSON();
+//     return new Date(new Date(json_date) + 8 * 3600 * 1000).toString().replace(/T/g, ' ').replace(/\.[\d]{3}Z/, '') 
+// }
+var opts = {
+	    width : 200,     // 信息窗口宽度
+	    height: 100,     // 信息窗口高度
+	    title : "地址" , // 信息窗口标题
+	    message:"地址"
+	}
+    function clearActive(){
+        for(let key in date){
+            document.querySelector('#point'+date[key]).classList.remove('activeStyle')
+        }
+    }
+var geoc = new BMapGL.Geocoder();
+        document.querySelector('#result_l').addEventListener('click', function(e){
+            // console.log(e.srcElement)
+            clearActive()
+            e.srcElement.classList.add('activeStyle')
+
+            if(e.target.value){
+                for(let index in _marker){
+                    _marker[index].enableMassClear()
+                    map.clearOverlays()
+                }
+                // map.removeOverlay()
+            wordChange(e.target.value)
+            }
+		}, false);
+// 批量解析
+function allDate(){
+    countDown()
+    setTimeout(() => {
+        clearActive()
+        for(let index in _marker){
+            _marker[index].enableMassClear()
+            map.clearOverlays()
+        }
+        wordChange(allStr)
+    }, 100);
+    
+}
+function wordChange(str,flag){
+    if(flag) {
+        adds = allArr
+        bdGEO()
+        return
+    }
+    arr = str.split('，')
+    arr = [...new Set(arr)]
+    adds = []
+    for (let index in arr){
+        if(arr[index].includes('居住于')){
+            adds.push(arr[index].substring(3))
+        }
+    }
+    bdGEO()
+}
+
+function bdGEO(){
+    for(let index in adds){
+        geocodeSearch(adds[index])
+    }
+}
+function geocodeSearch(add){
+    addressOver = []
+    myGeo.getPoint(add, function(point){
+        if (point) {
+            var address = new BMapGL.Point(point.lng, point.lat);
+            addressOver.push({
+                label:add,
+                address:address
+            })
+            addMarker(address,new BMapGL.Label(add,{offset:new BMapGL.Size(10,-10)}));
+        }
+    }, "上海市");
+}
+function addMarker(point,label){
+    const per =  new BMapGL.Icon('http://121.40.110.100:13600/pp.png', new BMapGL.Size(20, 20))
+    // const per =  new BMapGL.Icon('http://10.10.136.188:3000/pp.png', new BMapGL.Size(20, 20))
+    var marker = new BMapGL.Marker(point,{icon:per});
+    _marker.push(marker)
+    map.addOverlay(marker);
+    marker.disableMassClear();
+}
+function setLabelFun() {
+    for(let index in addressOver){
+        map.addOverlay(new BMapGL.Label(addressOver[index].label,{position:addressOver[index].address,offset:new BMapGL.Size(10,-10)}));
+    }
+}
+function removeLabelFun() {
+    map.clearOverlays()
+}
+
+
+
+</script>

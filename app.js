@@ -17,10 +17,10 @@ const index = require('./routes/index')
 // error handler
 onerror(app)
 app.use(cors());
-app.use(historyApiFallback({
-  index: '/index.html',
-}))
-app.use(static(path.join( __dirname, './public/dist')))
+// app.use(historyApiFallback({
+//   index: '/index.html',
+// }))
+// app.use(static(path.join( __dirname, './public/dist')))
 
 // middlewares
 app.use(bodyparser({
@@ -28,7 +28,7 @@ app.use(bodyparser({
 }))
 // app.use(json())
 app.use(logger())
-// app.use(require('koa-static')(__dirname + '/public'))
+app.use(require('koa-static')(__dirname + '/public'))
 
 app.use(views(__dirname + '/views', {
   extension: 'pug'
